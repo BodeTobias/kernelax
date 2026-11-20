@@ -5,6 +5,7 @@ type: software
 authors:
   - family-names: Bode
     given-names: Tobias
+    orcid: "https://orcid.org/0000-0001-7941-7658"
 version: 0.1.0
 date-released: 2026-11-19
 license: MIT
