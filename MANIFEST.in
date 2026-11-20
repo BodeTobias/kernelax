@@ -1,0 +1,6 @@
+include CITATION.cff
+include docs/reference.md
+graft tests
+graft benchmarks
+graft examples
+global-exclude __pycache__ *.py[cod]

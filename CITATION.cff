@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "kernelax: fused, vectorized and multithreaded C and CUDA kernels from JAX"
+type: software
+authors:
+  - family-names: Bode
+    given-names: Tobias
+version: 0.1.0
+date-released: 2026-11-19
+license: MIT
+repository-code: "https://github.com/BodeTobias/kernelax"
+keywords:
+  - JAX
+  - kernel fusion
+  - SIMD
+  - CUDA
+  - automatic differentiation
+  - finite elements
+  - material models
