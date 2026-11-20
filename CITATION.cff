@@ -7,7 +7,8 @@ authors:
     given-names: Tobias
     orcid: "https://orcid.org/0000-0001-7941-7658"
 version: 0.1.0
-date-released: 2026-11-19
+date-released: 2026-11-20
+doi: 10.5281/zenodo.24395595
 license: MIT
 repository-code: "https://github.com/BodeTobias/kernelax"
 keywords:

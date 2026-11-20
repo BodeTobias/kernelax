@@ -1,5 +1,8 @@
 # kernelax: fused, vectorized and multithreaded C and CUDA kernels from JAX
 
+[![tests](https://github.com/BodeTobias/kernelax/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/BodeTobias/kernelax/actions/workflows/tests.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24395595.svg)](https://doi.org/10.5281/zenodo.24395595)
+
 `kernelax.jit` is a drop-in replacement for `jax.jit` for JAX code that does many small operations per sample: a
 material law at every integration point, a Newton solve per particle, a 3 x 3 eigenproblem per cell. It compiles such
 code into fused kernels, C with SIMD and OpenMP on the CPU and CUDA on NVIDIA GPUs.
@@ -107,6 +110,7 @@ If you use kernelax in your work, please cite it as given in
   title   = {kernelax: fused, vectorized and multithreaded C and CUDA kernels from JAX},
   year    = {2026},
   version = {0.1.0},
+  doi     = {10.5281/zenodo.24395595},
   url     = {https://github.com/BodeTobias/kernelax},
 }
 ```
