@@ -431,7 +431,15 @@ def _build(f, example, batched, W, K, reduce, closed, index, keep_nans=False, fi
     def compiled(sources):
         if later == 1:
             return [compile_c(sources[0])]
-        return thread_map(compile_c, sources, len(sources))  # (gcc processes in parallel)
+
+        def variant(src):  # (a variant K > 1 that gcc cannot build in time is left out, as in Kernel.complete: K = 1
+            try:  # runs everywhere; gcc 13 took 160 s for the K = 4 variant of a kernel of selects, gcc 15 8.5 s)
+                return compile_c(src)
+            except GccTimeout:
+                if src is sources[0]:
+                    raise
+                return None
+        return thread_map(variant, sources, len(sources))  # (gcc processes in parallel)
     if key not in _KERNELS:  # (a gcc timeout raises NotImplementedError: noted in the index as well)
         t0 = time.perf_counter()
         try:
@@ -442,6 +450,9 @@ def _build(f, example, batched, W, K, reduce, closed, index, keep_nans=False, fi
                 raise
             sources, params, key = again
             built = compiled(sources)
+        if None in built:  # (variants left out)
+            Ks, sources = [k for k, b in zip(Ks, built) if b], tuple(src for src, b in zip(sources, built) if b)
+            built, later = [b for b in built if b], len(Ks)
         with _LOCK:
             if key not in _KERNELS:  # (else built by another thread meanwhile, from the same source)
                 _KERNELS[key] = Kernel(key, [b[0] for b in built], [b[3] for b in built], Ks[:later], out_tree, params, inputs,

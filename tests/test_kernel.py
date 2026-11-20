@@ -1142,7 +1142,7 @@ def test_scatter_of_a_row_at_a_symbolic_index():
         return s, jnp.maximum(s.at[j].max(x[2:6]), 0.0)
     rng = np.random.default_rng(91)
     x, i, j = rng.normal(size=(300, 6)), rng.integers(-2, 67, 300), rng.integers(-2, 67, 300)
-    g = cvmap(f, (x[0], i[0], j[0]), (0, 0, 0))
+    g = cvmap(f, (x[0], i[0], j[0]), (0, 0, 0), K=1)  # (its variants K > 1: gcc 13 up to 160 s)
     assert len(g.kernel.sources[0]) < 250_000  # (every position: 0.6 MB)
     for o, r in zip(g(x, i, j), jax.vmap(f)(x, i, j)):
         close(o, r, rtol=1e-12)
@@ -1353,3 +1353,26 @@ def test_picks_as_chains_of_selects_by_their_runs():
     assert ops(distinct, i, x)["pick"] == 1
     c = ops(padded, i, x)
     assert not c["pick"] and c["select"] >= 10, c
+
+
+def test_variants_that_gcc_cannot_build_in_time_left_out(monkeypatch):
+    """A variant K > 1 that gcc cannot build within its time is left out where the variants are built together (cvmap,
+    benchmarks/run.py), as where they follow in the background (Kernel.complete): K = 1 runs everywhere. Before, the
+    whole kernel failed: gcc 13 took 160 s for the K = 4 variant of a kernel of selects that gcc 15 builds in 8.5 s
+    (the CI's job with the system's gcc 13)."""
+    import re
+    import time
+    from kernelax import build, cpu as ck
+    real = ck.compile_c
+
+    def slow_for_k4(src, *a, **k):
+        if re.search(r"^#define K 4$", src, re.M):
+            raise build.GccTimeout("kernelax: gcc took more than 120.0 s (test)", False)
+        return real(src, *a, **k)
+    monkeypatch.setattr(ck, "compile_c", slow_for_k4)
+    c = 0.5 + time.time_ns() % 10 ** 9 * 1e-10  # (a kernel not built before)
+    f = lambda r: jnp.sin(r * c) * r + c
+    x = np.random.default_rng(86).uniform(0.5, 1.5, (300, 3))
+    g = cvmap(f, (x[0],), (0,))
+    assert g.kernel.Ks == [1, 2, 3], g.kernel.Ks
+    close(g(x), jax.vmap(f)(x), rtol=1e-13)
