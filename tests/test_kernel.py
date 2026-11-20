@@ -1118,13 +1118,13 @@ def test_top_k_of_few_by_selection(dtype):
     by lower index, floats in XLA's total order: NaN, -0.0), instead of sorting all of them (n^2 / 2 compare-swaps:
     the positions an environment's reset draws, jumanji's Maze 189 000 nodes of 331 000, xland-minigrid 38 500 of 67 000)."""
     rng = np.random.default_rng(90)
-    x = rng.integers(-3, 4, (50, 100)).astype(dtype)  # (ties)
+    x = rng.integers(-3, 4, (50, 48)).astype(dtype)  # (ties)
     if dtype != np.int32:
         x[:, ::7] = rng.normal(size=x[:, ::7].shape)
         x[::5, 3], x[::6, 11], x[::4, 20], x[::3, 40] = np.nan, -np.nan, -0.0, 0.0
     f = lambda v: (jax.lax.top_k(v, 1), jax.lax.top_k(v, 3), jax.lax.top_k(-v, 2))
-    g = cvmap(f, (x[0],), (0,))
-    assert len(g.kernel.sources[0]) < 1_000_000  # (sorted: 4.4-5.7 MB)
+    g = cvmap(f, (x[0],), (0,), K=1)  # (100 entries, float32 for AVX2: gcc's combiner took 145 s; 48: 7 s)
+    assert len(g.kernel.sources[0]) < 600_000  # (sorted: 1.0 MB, 100 entries 4.4-5.7 MB)
     for o, r in zip(jax.tree.leaves(g(x)), jax.tree.leaves(jax.vmap(f)(x))):
         np.testing.assert_array_equal(np.asarray(o).view(np.int32 if dtype != np.float64 else np.int64) if dtype != np.int32 and np.asarray(r).dtype.kind == "f" else o,
                                       np.asarray(r).view(np.int32 if dtype != np.float64 else np.int64) if dtype != np.int32 and np.asarray(r).dtype.kind == "f" else r)
