@@ -1646,9 +1646,10 @@ def test_threads_bound_only_where_they_fill_the_mask(tmp_path):
     threads are bound only where they are as many as its CPUs: with fewer, every such process bound its threads to the
     same first CPUs (3 processes of 1 thread on 3 CPUs: 2.7x slower)."""
     import subprocess
-    mask = sorted(os.sched_getaffinity(0))[:4]
-    if len(mask) < 4 or "OMP_PROC_BIND" in os.environ or "GOMP_CPU_AFFINITY" in os.environ:
-        pytest.skip("needs 4 CPUs and no binding by the environment")
+    k = 4 if os.sysconf("SC_NPROCESSORS_ONLN") > 4 else 2  # (a mask of fewer CPUs than the machine's: restricted; on a
+    mask = sorted(os.sched_getaffinity(0))[:k]  # runner of 4 CPUs, the first 4 were all of them, and nothing was bound)
+    if len(mask) < k or k >= os.sysconf("SC_NPROCESSORS_ONLN") or "OMP_PROC_BIND" in os.environ or "GOMP_CPU_AFFINITY" in os.environ:
+        pytest.skip("needs more than 2 CPUs and no binding by the environment")
     script = tmp_path / "pin.py"
     script.write_text("""import os, jax, jax.numpy as jnp, numpy as np
 from kernelax import jit
@@ -1658,7 +1659,7 @@ pool = [t for t in os.listdir("/proc/self/task") if open(f"/proc/self/task/{t}/c
 print(sorted(len(os.sched_getaffinity(int(t))) for t in pool))
 """)
     env = dict(os.environ, KERNELAX_CACHE_DIR=str(tmp_path / "cache"), JAX_PLATFORMS="cpu")
-    for nt, cpus in ((2, 4), (4, 1)):  # (the pool's team: nt threads, each on its own CPU only where they fill the mask)
+    for nt, cpus in ((k // 2, k), (k, 1)):  # (the pool's team: nt threads, each on its own CPU only where they fill the mask)
         r = subprocess.run(["taskset", "-c", ",".join(map(str, mask)), sys.executable, str(script)], env=dict(env, OMP_NUM_THREADS=str(nt)),
                            capture_output=True, text=True, timeout=600)
         assert r.returncode == 0 and r.stdout.strip() == str([cpus] * nt), (nt, r.stdout, r.stderr[-2000:])
