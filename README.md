@@ -1,3 +1,7 @@
+<div align="center">
+<img width="150" height="150" alt="kernelax-logo" src="https://github.com/user-attachments/assets/ec0eaeaa-0a1f-4076-8ec0-e198b8083dd2" />
+</div>
+
 # kernelax: fused, vectorized and multithreaded C and CUDA kernels from JAX
 
 [![tests](https://github.com/BodeTobias/kernelax/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/BodeTobias/kernelax/actions/workflows/tests.yml)
